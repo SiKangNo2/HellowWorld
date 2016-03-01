@@ -70,6 +70,7 @@ class RotateView extends ImageView {
         mScaleBtnPoint = new Point();
         mCenterPoint = new PointF();
         startPoint = new PointF();
+        endPoint = new PointF();
 
         mButtonCode = VIEW_CONTENT;
     }
@@ -129,6 +130,7 @@ class RotateView extends ImageView {
     }
 
     private PointF startPoint;
+    private PointF endPoint;
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
@@ -143,27 +145,38 @@ class RotateView extends ImageView {
                 break;
             //移动手指时
             case MotionEvent.ACTION_MOVE:
+                endPoint.x = event.getX();
+                endPoint.y = event.getY();
                 switch (mButtonCode) {
-                    //起始点在内容区域，默认触发事件
-                    case VIEW_CONTENT:
-                        super.onTouchEvent(event);
-                        break;
-                    //起始点在取消按钮，关闭编辑框
-                    case CANCLE_BUTTON:
-                        mEndle = false;
-                        invalidate();
-                        break;
                     //起始点在旋转按钮，旋转View
                     case ROTATE_BUTTON:
-                        PointF endPoint = new PointF(event.getX(), event.getY());
                         //得到目标角度
-                        float angle=(this.getRotation()+getAngle(startPoint,endPoint))%360;
-                        Log.d(TAG,angle+"");
+                        float angle = (this.getRotation() + getAngle(startPoint, endPoint)) % 360;
+                        Log.d(TAG, angle + "");
                         this.setRotation(angle);
                         break;
 
                 }
 
+                break;
+            //抬起手指
+            case MotionEvent.ACTION_UP:
+                float moveX = event.getX() - startPoint.x;
+                float moveY = event.getY() - startPoint.y;
+                if (Math.abs(moveX) < mTouchSlop || Math.abs(moveY) < mTouchSlop) {
+                    switch (mButtonCode) {
+                        case CANCLE_BUTTON:
+                            mEndle = false;
+                            invalidate();
+                            break;
+                        case VIEW_CONTENT:
+                            if(!mEndle){
+                                mEndle = true;
+                                invalidate();
+                            }
+                            break;
+                    }
+                }
                 break;
         }
         return true;
@@ -243,7 +256,6 @@ class RotateView extends ImageView {
         return angle;
 
     }
-
 
 
 }
