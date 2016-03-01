@@ -1,0 +1,3 @@
+include ':DroidPlugin',  ':TestPlugin',  ':ipctest', ':rotate'
+
+include ':bluetooth'
