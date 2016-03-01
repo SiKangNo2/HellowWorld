@@ -11,6 +11,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -20,15 +21,17 @@ import android.widget.ImageView;
 
 class RotateView extends ImageView {
     private final String TAG = "RotateViewDebug";
+
     private int mWidth, mHeight;
     private boolean mEndle;//编辑状态
     private Paint mLinePaint, mButtonPaint;
     private Path mPath;
     private Point mCancleBtnPoint, mMoveBtnPoint, mRotateBtnPoint, mScaleBtnPoint;//按钮坐标
+    private PointF mCenterPoint;
     private float mButtonRadius;//按钮半径
     private int mButtonCode;
     private int mTouchSlop;
-    private float viewRotation;
+
     //Button Code
     public static final int CANCLE_BUTTON = 1;
     public static final int MOVE_BUTTON = 2;
@@ -65,6 +68,8 @@ class RotateView extends ImageView {
         mRotateBtnPoint = new Point();
         mMoveBtnPoint = new Point();
         mScaleBtnPoint = new Point();
+        mCenterPoint = new PointF();
+        startPoint = new PointF();
 
         mButtonCode = VIEW_CONTENT;
     }
@@ -97,6 +102,7 @@ class RotateView extends ImageView {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (mEndle) {
+            //绘制编辑框
             mPath.reset();
             mPath.moveTo(mCancleBtnPoint.x, mCancleBtnPoint.y);
             mPath.lineTo(mMoveBtnPoint.x, mMoveBtnPoint.y);
@@ -105,6 +111,7 @@ class RotateView extends ImageView {
             mPath.lineTo(mCancleBtnPoint.x, mCancleBtnPoint.y);
             canvas.drawPath(mPath, mLinePaint);
 
+            //绘制功能按钮
             canvas.drawCircle(mCancleBtnPoint.x, mCancleBtnPoint.y, mButtonRadius, mButtonPaint);
             canvas.drawCircle(mMoveBtnPoint.x, mMoveBtnPoint.y, mButtonRadius, mButtonPaint);
             canvas.drawCircle(mScaleBtnPoint.x, mScaleBtnPoint.y, mButtonRadius, mButtonPaint);
@@ -118,44 +125,41 @@ class RotateView extends ImageView {
         mMoveBtnPoint.set(0 + radius, mHeight - radius);
         mScaleBtnPoint.set(mWidth - radius, mHeight - radius);
         mRotateBtnPoint.set(mWidth - radius, 0 + radius);
+        mCenterPoint.set(mWidth / 2, mHeight / 2);
     }
 
-    private float startX;
-    private float startY;
+    private PointF startPoint;
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int action = event.getAction();
         switch (action) {
+            //判断触点坐标所属区域（旋转、移动、缩放、取消、内容）
             case MotionEvent.ACTION_DOWN:
-                startX = event.getX() - mWidth / 2;
-                startY = event.getY() - mHeight / 2;
-                Log.d(TAG, "startX:"+startX+"----startY:"+startY);
+                startPoint.x = event.getX();
+                startPoint.y = event.getY();
                 mButtonCode = whichOneTouched(event);
                 break;
+            //移动手指时
             case MotionEvent.ACTION_MOVE:
                 switch (mButtonCode) {
+                    //起始点在内容区域，默认触发事件
                     case VIEW_CONTENT:
                         super.onTouchEvent(event);
                         break;
+                    //起始点在取消按钮，关闭编辑框
                     case CANCLE_BUTTON:
                         mEndle = false;
                         invalidate();
                         break;
+                    //起始点在旋转按钮，旋转View
                     case ROTATE_BUTTON:
-                        float endX = event.getX() - mWidth / 2;
-                        float endY = event.getY() - mHeight / 2;
-                        Log.d(TAG, "endX:"+endX+"----endY:"+startY);
-                        float moveX = startX - endX;
-                        float moveY = startY - endY;
-
-                        if (Math.abs(moveX) > mTouchSlop || Math.abs(moveY) > mTouchSlop) {
-                            float angle = getAngle(moveX, moveY);
-                            float a = (this.getRotation() + angle) % 360;
-                            Log.d(TAG, "angle:"+a);
-                            this.setRotation(a);
-                        }
+                        PointF endPoint = new PointF(event.getX(), event.getY());
+                        //得到目标角度
+                        float angle=(this.getRotation()+getAngle(startPoint,endPoint))%360;
+                        Log.d(TAG,angle+"");
+                        this.setRotation(angle);
                         break;
 
                 }
@@ -168,6 +172,9 @@ class RotateView extends ImageView {
 
     //判断触摸点在哪个区域
     private int whichOneTouched(MotionEvent event) {
+        if (!mEndle) {
+            return VIEW_CONTENT;
+        }
         int buttonCode = VIEW_CONTENT;
         float x = event.getX();
         float y = event.getY();
@@ -194,4 +201,49 @@ class RotateView extends ImageView {
         double z = Math.sqrt(x * x + y * y);
         return Math.round((float) (Math.asin(y / z) / Math.PI * 180));//最终角度
     }
+
+    /**
+     * 计算两点之间的距离
+     */
+    private double pointDistance(PointF p1, PointF p2) {
+        float x = p2.x - p1.x;
+        float y = p2.y - p1.y;
+        return Math.sqrt(x * x + y * y);
+    }
+
+    /**
+     * 得到两点之间的角度
+     */
+    public float getAngle(PointF start, PointF end) {
+        //根据起始点和结束点以及View中心点求出三角形的三条边长
+        double side1 = pointDistance(mCenterPoint, start);
+        double side2 = pointDistance(start, end);
+        double side3 = pointDistance(mCenterPoint, end);
+
+        //得出弧度
+        double cosb = (side1 * side1 + side3 * side3 - side2 * side2) / (2 * side1 * side3);
+        if (cosb >= 1) {
+            cosb = 1f;
+        }
+        double radian = Math.acos(cosb);
+
+        //弧度换算为角度
+        float angle = (float) (radian * 180 / Math.PI);
+
+        //center -> proMove的向量， 我们使用PointF来实现
+        PointF centerToProMove = new PointF((start.x - mCenterPoint.x), (start.y - mCenterPoint.y));
+        //center -> curMove 的向量
+        PointF centerToCurMove = new PointF((end.x - mCenterPoint.x), (end.y - mCenterPoint.y));
+        //向量叉乘结果, 如果结果为负数， 表示为逆时针， 结果为正数表示顺时针
+        float result = centerToProMove.x * centerToCurMove.y - centerToProMove.y * centerToCurMove.x;
+
+        if (result < 0) {
+            angle = -angle;
+        }
+        return angle;
+
+    }
+
+
+
 }
