@@ -24,7 +24,7 @@ class RotateView extends ImageView {
 
     private int mWidth, mHeight;
     private boolean mEndle;//编辑状态
-    private Paint mLinePaint, mButtonPaint;
+    private Paint mLinePaint, mButtonPaint, mTextPaint;
     private Path mPath;
     private Point mCancleBtnPoint, mMoveBtnPoint, mRotateBtnPoint, mScaleBtnPoint;//按钮坐标
     private PointF mCenterPoint;
@@ -54,6 +54,7 @@ class RotateView extends ImageView {
         mEndle = true;
         mLinePaint = new Paint();
         mButtonPaint = new Paint();
+        mTextPaint = new Paint();
         mPath = new Path();
         //init path
         mLinePaint.setColor(Color.RED);
@@ -62,6 +63,9 @@ class RotateView extends ImageView {
         mLinePaint.setStyle(Paint.Style.STROKE);
         mButtonPaint.setAntiAlias(true);
         mButtonPaint.setColor(Color.BLUE);
+
+        mTextPaint.setColor(Color.WHITE);
+        mTextPaint.setTextSize(10);
 
         //init Point
         mCancleBtnPoint = new Point();
@@ -82,7 +86,6 @@ class RotateView extends ImageView {
         mHeight = measureHanlder(heightMeasureSpec);
         mButtonRadius = mWidth < mHeight ? mWidth / 15 : mHeight / 15;
         resetPoint((int) mButtonRadius);
-        Log.d(TAG, "radius:" + mButtonRadius);
     }
 
     private int measureHanlder(int measureSpec) {
@@ -114,9 +117,13 @@ class RotateView extends ImageView {
 
             //绘制功能按钮
             canvas.drawCircle(mCancleBtnPoint.x, mCancleBtnPoint.y, mButtonRadius, mButtonPaint);
+            canvas.drawText("1", 0, 0, mTextPaint);
             canvas.drawCircle(mMoveBtnPoint.x, mMoveBtnPoint.y, mButtonRadius, mButtonPaint);
+            canvas.drawText("3", 0, mHeight - mButtonRadius * 2, mTextPaint);
             canvas.drawCircle(mScaleBtnPoint.x, mScaleBtnPoint.y, mButtonRadius, mButtonPaint);
+            canvas.drawText("4", mWidth - mButtonRadius * 2, mHeight - mButtonRadius * 2, mTextPaint);
             canvas.drawCircle(mRotateBtnPoint.x, mRotateBtnPoint.y, mButtonRadius, mButtonPaint);
+            canvas.drawText("2", mWidth - mButtonRadius * 2, 0, mTextPaint);
         }
 
     }
@@ -157,7 +164,6 @@ class RotateView extends ImageView {
                         break;
 
                 }
-
                 break;
             //抬起手指
             case MotionEvent.ACTION_UP:
@@ -170,7 +176,7 @@ class RotateView extends ImageView {
                             invalidate();
                             break;
                         case VIEW_CONTENT:
-                            if(!mEndle){
+                            if (!mEndle) {
                                 mEndle = true;
                                 invalidate();
                             }
