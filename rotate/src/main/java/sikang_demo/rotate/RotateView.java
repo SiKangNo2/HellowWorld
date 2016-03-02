@@ -6,8 +6,12 @@ package sikang_demo.rotate;
 
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
@@ -19,9 +23,10 @@ import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 import android.widget.ImageView;
 
+import java.io.InputStream;
+
 class RotateView extends ImageView {
     private final String TAG = "RotateViewDebug";
-
     private int mWidth, mHeight;
     private boolean mEndle;//编辑状态
     private Paint mLinePaint, mButtonPaint, mTextPaint;
@@ -31,7 +36,8 @@ class RotateView extends ImageView {
     private float mButtonRadius;//按钮半径
     private int mButtonCode;
     private int mTouchSlop;
-
+    private Bitmap mSrcBm, mCancleBm, mMoveBm, mRotateBm, mScaleBm;
+    private Matrix mButtonMatrix, mSrcMatrix;
     //Button Code
     public static final int CANCLE_BUTTON = 1;
     public static final int MOVE_BUTTON = 2;
@@ -76,6 +82,14 @@ class RotateView extends ImageView {
         startPoint = new PointF();
         endPoint = new PointF();
 
+        //init Bitmap
+        Resources res = context.getResources();
+        mCancleBm = BitmapFactory.decodeResource(res, R.mipmap.cancle);
+        mRotateBm = BitmapFactory.decodeResource(res, R.mipmap.rotate);
+        mMoveBm = BitmapFactory.decodeResource(res, R.mipmap.move);
+        mScaleBm = BitmapFactory.decodeResource(res, R.mipmap.scale);
+        mButtonMatrix = new Matrix();
+        mSrcMatrix = new Matrix();
         mButtonCode = VIEW_CONTENT;
     }
 
@@ -84,8 +98,17 @@ class RotateView extends ImageView {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         mWidth = measureHanlder(widthMeasureSpec);
         mHeight = measureHanlder(heightMeasureSpec);
+        if (mWidth < 300) {
+            mWidth = 300;
+        }
+        if (mHeight < 300) {
+            mHeight = 300;
+        }
         mButtonRadius = mWidth < mHeight ? mWidth / 15 : mHeight / 15;
         resetPoint((int) mButtonRadius);
+
+        setMeasuredDimension(mWidth, mHeight);
+
     }
 
     private int measureHanlder(int measureSpec) {
@@ -105,6 +128,11 @@ class RotateView extends ImageView {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        if (mSrcBm != null) {
+            mSrcMatrix.setTranslate(mCancleBtnPoint.x, mCancleBtnPoint.y);
+            canvas.drawBitmap(mSrcBm, mSrcMatrix, mButtonPaint);
+            Log.d(TAG, "ondraw");
+        }
         if (mEndle) {
             //绘制编辑框
             mPath.reset();
@@ -115,15 +143,30 @@ class RotateView extends ImageView {
             mPath.lineTo(mCancleBtnPoint.x, mCancleBtnPoint.y);
             canvas.drawPath(mPath, mLinePaint);
 
+            float scale = 50 / mCancleBm.getWidth();
+            mButtonMatrix.setScale(scale, scale);
             //绘制功能按钮
-            canvas.drawCircle(mCancleBtnPoint.x, mCancleBtnPoint.y, mButtonRadius, mButtonPaint);
-            canvas.drawText("1", 0, 0, mTextPaint);
-            canvas.drawCircle(mMoveBtnPoint.x, mMoveBtnPoint.y, mButtonRadius, mButtonPaint);
-            canvas.drawText("3", 0, mHeight - mButtonRadius * 2, mTextPaint);
-            canvas.drawCircle(mScaleBtnPoint.x, mScaleBtnPoint.y, mButtonRadius, mButtonPaint);
-            canvas.drawText("4", mWidth - mButtonRadius * 2, mHeight - mButtonRadius * 2, mTextPaint);
-            canvas.drawCircle(mRotateBtnPoint.x, mRotateBtnPoint.y, mButtonRadius, mButtonPaint);
-            canvas.drawText("2", mWidth - mButtonRadius * 2, 0, mTextPaint);
+            mButtonMatrix.setTranslate(0, 0);
+            canvas.drawBitmap(mCancleBm, mButtonMatrix, mButtonPaint);
+
+            mButtonMatrix.setTranslate(0, mHeight - mButtonRadius * 2);
+            canvas.drawBitmap(mMoveBm, mButtonMatrix, mButtonPaint);
+
+            mButtonMatrix.setTranslate(mWidth - mButtonRadius * 2, mHeight - mButtonRadius * 2);
+            canvas.drawBitmap(mScaleBm, mButtonMatrix, mButtonPaint);
+
+            mButtonMatrix.setTranslate(mWidth - mButtonRadius * 2, 0);
+            canvas.drawBitmap(mRotateBm, mButtonMatrix, mButtonPaint);
+
+//            canvas.drawBitmap(mCancleBm, mCancleBtnPoint.x, mCancleBtnPoint.y, mButtonPaint);
+//            canvas.drawBitmap(mMoveBm, mMoveBtnPoint.x, mMoveBtnPoint.y, mButtonPaint);
+//            canvas.drawBitmap(mScaleBm, mScaleBtnPoint.x, mScaleBtnPoint.y, mButtonPaint);
+//            canvas.drawBitmap(mRotateBm, c, mButtonPaint);
+
+//            canvas.drawCircle(mCancleBtnPoint.x, mCancleBtnPoint.y, mButtonRadius, mButtonPaint);
+//            canvas.drawCircle(mMoveBtnPoint.x, mMoveBtnPoint.y, mButtonRadius, mButtonPaint);
+//            canvas.drawCircle(mScaleBtnPoint.x, mScaleBtnPoint.y, mButtonRadius, mButtonPaint);
+//            canvas.drawCircle(mRotateBtnPoint.x, mRotateBtnPoint.y, mButtonRadius, mButtonPaint);
         }
 
     }
@@ -133,21 +176,28 @@ class RotateView extends ImageView {
         mMoveBtnPoint.set(0 + radius, mHeight - radius);
         mScaleBtnPoint.set(mWidth - radius, mHeight - radius);
         mRotateBtnPoint.set(mWidth - radius, 0 + radius);
-        mCenterPoint.set(mWidth / 2, mHeight / 2);
+        mCenterPoint.set(mWidth / 2 + getLeft(), mHeight / 2 + getTop());
     }
 
     private PointF startPoint;
     private PointF endPoint;
+    private float startRawX, startRawY, startTranX, startTranY;
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int action = event.getAction();
+        float moveX;
+        float moveY;
         switch (action) {
             //判断触点坐标所属区域（旋转、移动、缩放、取消、内容）
             case MotionEvent.ACTION_DOWN:
                 startPoint.x = event.getX();
                 startPoint.y = event.getY();
+                startRawX = event.getRawX();
+                startRawY = event.getRawY();
+                startTranX = getTranslationX();
+                startTranY = getTranslationY();
                 mButtonCode = whichOneTouched(event);
                 break;
             //移动手指时
@@ -155,20 +205,37 @@ class RotateView extends ImageView {
                 endPoint.x = event.getX();
                 endPoint.y = event.getY();
                 switch (mButtonCode) {
-                    //起始点在旋转按钮，旋转View
+                    //操作旋转按钮时，旋转
                     case ROTATE_BUTTON:
                         //得到目标角度
                         float angle = (this.getRotation() + getAngle(startPoint, endPoint)) % 360;
-                        Log.d(TAG, angle + "");
                         this.setRotation(angle);
                         break;
-
+                    //操作缩放按钮时
+                    case SCALE_BUTTON:
+                        //计算缩放比例
+                        moveX = endPoint.x - startPoint.x;
+                        moveY = endPoint.y - startPoint.y;
+                        float scale = 1f + (Math.abs(moveX) > Math.abs(moveY) ? moveX / (startPoint.x - mCenterPoint.x) : moveY / (startPoint.y - mCenterPoint.y));
+                        Log.d(TAG, scale + "");
+                        mSrcMatrix.setScale(scale, scale);
+                        invalidate();
+                        break;
+                    case MOVE_BUTTON:
+                        float targetX = startTranX + (event.getRawX() - startRawX);
+                        float targetY = startTranY + (event.getRawY() - startRawY);
+                        //确保不会移除屏幕
+                        if (targetX + getLeft() > 0 && targetX + getLeft() < getDimension(R.dimen.x320) - mWidth && targetY + getTop() > 0 && targetY + getTop() < getDimension(R.dimen.y480) - mHeight) {
+                            setTranslationX(targetX);
+                            setTranslationY(targetY);
+                        }
+                        break;
                 }
                 break;
             //抬起手指
             case MotionEvent.ACTION_UP:
-                float moveX = event.getX() - startPoint.x;
-                float moveY = event.getY() - startPoint.y;
+                moveX = event.getX() - startPoint.x;
+                moveY = event.getY() - startPoint.y;
                 if (Math.abs(moveX) < mTouchSlop || Math.abs(moveY) < mTouchSlop) {
                     switch (mButtonCode) {
                         case CANCLE_BUTTON:
@@ -213,6 +280,11 @@ class RotateView extends ImageView {
         return buttonCode;
     }
 
+    private float getDimension(int id) {
+        return getResources().getDimension(id);
+
+    }
+
     /**
      * 根据移动前后的坐标计算角度
      */
@@ -228,6 +300,10 @@ class RotateView extends ImageView {
         float x = p2.x - p1.x;
         float y = p2.y - p1.y;
         return Math.sqrt(x * x + y * y);
+    }
+
+    public void setSrc(int id) {
+        mSrcBm = BitmapFactory.decodeResource(getContext().getResources(), id);
     }
 
     /**
@@ -262,6 +338,4 @@ class RotateView extends ImageView {
         return angle;
 
     }
-
-
 }

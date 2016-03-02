@@ -215,10 +215,10 @@ public class chatActivity extends Activity implements OnItemClickListener ,OnCli
 			try {
 				/* 创建一个蓝牙服务器 
 				 * 参数分别：服务器名称、UUID	 */
-				mserverSocket = mBluetoothAdapter.listenUsingRfcommWithServiceRecord(PROTOCOL_SCHEME_RFCOMM,
-						UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
-//				Method listenMethod = mBluetoothAdapter.getClass().getMethod("listenUsingRfcommOn", new Class[]{int.class});
-//				mserverSocket  = ( BluetoothServerSocket) listenMethod.invoke(mBluetoothAdapter, new Object[]{20});
+//				mserverSocket = mBluetoothAdapter.listenUsingRfcommWithServiceRecord(PROTOCOL_SCHEME_RFCOMM,
+//						UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
+				Method listenMethod = mBluetoothAdapter.getClass().getMethod("listenUsingRfcommOn", new Class[]{int.class});
+				mserverSocket  = ( BluetoothServerSocket) listenMethod.invoke(mBluetoothAdapter, new Object[]{20});
 				Log.d("server", "wait cilent connect...");
 
 				Message msg = new Message();
@@ -242,6 +242,12 @@ public class chatActivity extends Activity implements OnItemClickListener ,OnCli
 				Log.d("server", "thred end ！");
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvocationTargetException e) {
+				e.printStackTrace();
+			} catch (NoSuchMethodException e) {
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
 				e.printStackTrace();
 			}
 		}

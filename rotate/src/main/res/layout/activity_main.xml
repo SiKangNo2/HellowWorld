@@ -5,9 +5,30 @@
     android:layout_height="match_parent"
     tools:context="sikang_demo.rotate.MainActivity">
 
-    <sikang_demo.rotate.RotateView
-        android:layout_width="500px"
-        android:layout_height="500px"
-        android:layout_centerInParent="true"
-        />
+    <sikang_demo.rotate.CircleLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000">
+
+        <sikang_demo.rotate.RotateView
+            android:id="@+id/mTouchView"
+            android:layout_width="300px"
+            android:layout_height="300px"
+             />
+
+        <sikang_demo.rotate.RotateView
+            android:layout_width="300px"
+            android:layout_height="300px"
+            />
+
+        <sikang_demo.rotate.RotateView
+            android:layout_width="300px"
+            android:layout_height="300px"
+            />
+
+        <sikang_demo.rotate.RotateView
+            android:layout_width="300px"
+            android:layout_height="300px"
+            />
+    </sikang_demo.rotate.CircleLayout>
 </RelativeLayout>
