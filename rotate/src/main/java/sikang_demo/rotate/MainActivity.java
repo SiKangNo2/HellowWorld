@@ -10,6 +10,6 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mTouchView= (RotateView) this.findViewById(R.id.mTouchView);
-        mTouchView.setSrc(R.mipmap.ic_launcher);
+        mTouchView.setSrc(R.mipmap.img);
     }
 }

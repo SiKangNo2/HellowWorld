@@ -8,7 +8,7 @@
     <sikang_demo.rotate.CircleLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#000000">
+        >
 
         <sikang_demo.rotate.RotateView
             android:id="@+id/mTouchView"

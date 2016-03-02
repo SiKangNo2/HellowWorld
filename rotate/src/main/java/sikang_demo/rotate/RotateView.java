@@ -21,6 +21,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import java.io.InputStream;
@@ -57,7 +58,7 @@ class RotateView extends ImageView {
 
     private void init(Context context) {
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
-        mEndle = true;
+        mEndle = false;
         mLinePaint = new Paint();
         mButtonPaint = new Paint();
         mTextPaint = new Paint();
@@ -142,7 +143,6 @@ class RotateView extends ImageView {
             mPath.lineTo(mRotateBtnPoint.x, mRotateBtnPoint.y);
             mPath.lineTo(mCancleBtnPoint.x, mCancleBtnPoint.y);
             canvas.drawPath(mPath, mLinePaint);
-
             float scale = 50 / mCancleBm.getWidth();
             mButtonMatrix.setScale(scale, scale);
             //绘制功能按钮
@@ -239,14 +239,11 @@ class RotateView extends ImageView {
                 if (Math.abs(moveX) < mTouchSlop || Math.abs(moveY) < mTouchSlop) {
                     switch (mButtonCode) {
                         case CANCLE_BUTTON:
-                            mEndle = false;
-                            invalidate();
+                            ((ViewGroup) getParent()).removeView(this);
                             break;
                         case VIEW_CONTENT:
-                            if (!mEndle) {
-                                mEndle = true;
-                                invalidate();
-                            }
+                            mEndle = !mEndle;
+                            invalidate();
                             break;
                     }
                 }

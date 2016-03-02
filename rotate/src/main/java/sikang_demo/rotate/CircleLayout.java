@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Point;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -83,12 +84,13 @@ public class CircleLayout extends ViewGroup {
             View childView = getChildAt(i);
             int widthSPec=MeasureSpec.makeMeasureSpec((int) (mLayoutRadius / 3), MeasureSpec.UNSPECIFIED);
             childView.measure(widthSPec,widthSPec                              );
-            int childHalfWidth=childView.getMeasuredWidth();
-            int childHalfHeight=childView.getMeasuredHeight();
-            Point nextPoint=getPoint(mCenterPoint, nowAngle, mLayoutRadius);
+            int childHalfWidth=childView.getMeasuredWidth()/2;
+            int childHalfHeight=childView.getMeasuredHeight()/2;
+            double radius=mLayoutRadius-(childHalfWidth<childHalfHeight?childHalfWidth:childHalfHeight);
+            Point nextPoint=getPoint(mCenterPoint, nowAngle, radius);
             Log.d(TAG,"x:"+nextPoint.x+"  y:"+nextPoint.y+"   width:"+childHalfWidth+"    height:"+childHalfHeight);
-            childView.layout(nextPoint.x - childHalfWidth, nextPoint.y - childHalfHeight, nextPoint.x , nextPoint.y );
-            nowAngle=nowAngle+childAngle;
+            childView.layout(nextPoint.x - childHalfWidth, nextPoint.y - childHalfHeight, nextPoint.x+childHalfWidth , nextPoint.y+childHalfHeight );
+            nowAngle=(nowAngle+childAngle)%360;
         }
     }
 
@@ -108,6 +110,7 @@ public class CircleLayout extends ViewGroup {
     }
 
     private int measureHanlder(int measureSpec) {
+
         int result;
         int specMode = MeasureSpec.getMode(measureSpec);
         int specSize = MeasureSpec.getSize(measureSpec);
