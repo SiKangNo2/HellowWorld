@@ -3,32 +3,82 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="sikang_demo.rotate.MainActivity">
+    tools:context=".main.MainActivity">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/x30">
+        <Button
+            android:id="@+id/activity_main_save_btn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="保存"/>
 
-    <sikang_demo.rotate.CircleLayout
+    </LinearLayout>
+    <sikang_demo.rotate.main.CircleLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         >
 
-        <sikang_demo.rotate.RotateView
+        <sikang_demo.rotate.main.TouchView
             android:id="@+id/mTouchView"
             android:layout_width="300px"
             android:layout_height="300px"
              />
 
-        <sikang_demo.rotate.RotateView
+        <sikang_demo.rotate.main.TouchView
             android:layout_width="300px"
             android:layout_height="300px"
             />
 
-        <sikang_demo.rotate.RotateView
+        <sikang_demo.rotate.main.TouchView
             android:layout_width="300px"
             android:layout_height="300px"
             />
 
-        <sikang_demo.rotate.RotateView
+        <sikang_demo.rotate.main.TouchView
             android:layout_width="300px"
             android:layout_height="300px"
             />
-    </sikang_demo.rotate.CircleLayout>
+        <sikang_demo.rotate.main.TouchView
+            android:layout_width="300px"
+            android:layout_height="300px"
+            />
+        <sikang_demo.rotate.main.TouchView
+            android:layout_width="300px"
+            android:layout_height="300px"
+            />
+        <sikang_demo.rotate.main.TouchView
+            android:layout_width="300px"
+            android:layout_height="300px"
+            />
+        <sikang_demo.rotate.main.TouchView
+            android:layout_width="300px"
+            android:layout_height="300px"
+            />
+        <sikang_demo.rotate.main.TouchView
+            android:layout_width="300px"
+            android:layout_height="300px"
+            />
+        <sikang_demo.rotate.main.TouchView
+            android:layout_width="300px"
+            android:layout_height="300px"
+            />
+        <sikang_demo.rotate.main.TouchView
+            android:layout_width="300px"
+            android:layout_height="300px"
+            />
+        <sikang_demo.rotate.main.TouchView
+            android:layout_width="300px"
+            android:layout_height="300px"
+            />
+        <sikang_demo.rotate.main.TouchView
+            android:layout_width="300px"
+            android:layout_height="300px"
+            />
+        <sikang_demo.rotate.main.TouchView
+            android:layout_width="300px"
+            android:layout_height="300px"
+            />
+
+    </sikang_demo.rotate.main.CircleLayout>
 </RelativeLayout>
