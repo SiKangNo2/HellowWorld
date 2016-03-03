@@ -57,6 +57,7 @@ class TouchView extends ImageView implements ViewTouchActionListener {
         init(context);
     }
 
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     private void init(Context context) {
         mActionController = TouchActionController.getInstance();
         mActionController.setActionListener(this);
@@ -208,7 +209,6 @@ class TouchView extends ImageView implements ViewTouchActionListener {
                 //记录绝对坐标
                 startRawX = event.getRawX();
                 startRawY = event.getRawY();
-                Log.d(TAG, "down:" + event.getX() + " ----" + event.getY());
                 //记录初始偏移值
                 nowTranX = getTranslationX();
                 nowTranY = getTranslationY();
@@ -222,47 +222,51 @@ class TouchView extends ImageView implements ViewTouchActionListener {
                 moveY = event.getRawY() - startRawY;
                 if (Math.abs(moveX) > mTouchSlop || Math.abs(moveY) > mTouchSlop) {
                     isClick = false;
-                    switch (mButtonCode) {
-                        //操作旋转按钮时，旋转
-                        case Constants.ACTION_ROTATE:
-                            //得到目标角度
-                            float angle = (this.getRotation() + getAngle(startPoint, endPoint)) % 360;
-                            this.setRotation(angle);
-                            mActionController.notifyListener(this, Constants.ACTION_ROTATE, angle);
-                            break;
-                        //操作缩放按钮时
-                        case Constants.ACTION_SCALE:
-                            //计算缩放比例
-                            float scale = 1f + (Math.abs(moveX) > Math.abs(moveY) ? moveX / (startPoint.x - mCenterPoint.x) : moveY / (startPoint.y - mCenterPoint.y));
-                            mSrcMatrix.postScale(scale, scale);
-                            invalidate();
-                            break;
-                        case Constants.ACTION_MOVE:
-                            getTargetTranslation(moveX, moveY);
-                            break;
-                    }
+                }
+                switch (mButtonCode) {
+                    //操作旋转按钮时，旋转
+                    case Constants.ACTION_ROTATE:
+                        //得到目标角度
+                        float angle = (this.getRotation() + getAngle(startPoint, endPoint)) % 360;
+                        this.setRotation(angle);
+                        mActionController.notifyListener(this, Constants.ACTION_ROTATE, angle);
+                        break;
+                    //操作缩放按钮时
+                    case Constants.ACTION_SCALE:
+                        //计算缩放比例
+                        float scale = 1f + (Math.abs(moveX) > Math.abs(moveY) ? moveX / (startPoint.x - mCenterPoint.x) : moveY / (startPoint.y - mCenterPoint.y));
+                        mSrcMatrix.postScale(scale, scale);
+                        invalidate();
+                        break;
+                    case Constants.ACTION_MOVE:
+                        getTargetTranslation(moveX, moveY);
+                        break;
                 }
                 break;
             //抬起手指
             case MotionEvent.ACTION_UP:
-                Log.d(TAG, "endx:" + event.getX() + "endy:" + event.getY() + "startx:" + startPoint.x + "starty:" + startPoint.y);
+                Log.d(TAG, "111111111111111111");
                 moveX = event.getRawX() - startRawX;
                 moveY = event.getRawY() - startRawY;
-                Log.d(TAG, "moveX:" + moveX + "   moveY:" + moveY + "  youch:" + mTouchSlop);
-                if (Math.abs(moveX) < mTouchSlop || Math.abs(moveY) < mTouchSlop) {
-                    switch (mButtonCode) {
-                        case Constants.ACTION_CANCLE:
+
+                switch (mButtonCode) {
+                    case Constants.ACTION_CANCLE:
+                        if (Math.abs(moveX) < mTouchSlop || Math.abs(moveY) < mTouchSlop)
                             ((ViewGroup) getParent()).removeView(this);
-                            break;
-                        case Constants.ACTION_MOVE:
-                            if (isClick) {
-                                mEndle = !mEndle;
-                                if (mEndle)
-                                    mActionController.notifyListener(this, Constants.ACTION_UNEDIT);
-                                invalidate();
-                            }
-                            break;
-                    }
+                        break;
+                    case Constants.ACTION_MOVE:
+                        Log.d(TAG, "555555555555555555");
+                        if (isClick) {
+                            Log.d(TAG, "333333333333333333");
+                            mEndle = !mEndle;
+                            if (mEndle)
+                                mActionController.notifyListener(this, Constants.ACTION_UNEDIT);
+                            invalidate();
+                        } else {
+                            Log.d(TAG, nowTranX + "-/////////////-" + nowTranX);
+                            mActionController.notifyListener(null, Constants.MOVE_FINISH);
+                        }
+                        break;
                 }
                 break;
         }
@@ -354,7 +358,6 @@ class TouchView extends ImageView implements ViewTouchActionListener {
 
     public void setSrcAngle(float angle) {
         if (mSrcBm != null) {
-            Log.d(TAG, "angle: " + angle);
             this.srcAngle = angle;
             mSrcBm = Bitmap.createBitmap(mSrcBm, 0, 0, mSrcWidth, mSrcHeight, mSrcMatrix, false);
         }
@@ -454,6 +457,11 @@ class TouchView extends ImageView implements ViewTouchActionListener {
                     mEndle = false;
                     invalidate();
                 }
+                break;
+            case Constants.MOVE_FINISH:
+                nowTranX = getTranslationX();
+                nowTranY = getTranslationY();
+                Log.d(TAG, nowTranX + "-------" + nowTranX);
                 break;
         }
     }

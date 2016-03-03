@@ -18,4 +18,5 @@ public class Constants {
     public static final int X_RIGHT = 12;
     public static final int Y_TOP = 13;
     public static final int Y_BOTTOM = 14;
+    public static final int MOVE_FINISH=15;
 }
