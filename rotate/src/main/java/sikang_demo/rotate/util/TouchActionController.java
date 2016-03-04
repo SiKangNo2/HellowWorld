@@ -9,7 +9,11 @@ import java.util.List;
 public class TouchActionController {
     private List<ViewTouchActionListener> mActionListener=new ArrayList<ViewTouchActionListener>(12);
     public static TouchActionController mTouchActionController=null;
-    private TouchActionController(){}
+    private boolean isMaxMove,isMinMove;
+    private TouchActionController(){
+        isMaxMove=false;
+        isMinMove=false;
+    }
 
     public static TouchActionController getInstance(){
         if(mTouchActionController==null) {
@@ -40,5 +44,21 @@ public class TouchActionController {
                 listener.onTouchAction(ACTION_ID,args);
             }
         }
+    }
+
+    public boolean isMaxMove() {
+        return isMaxMove;
+    }
+
+    public boolean isMinMove() {
+        return isMinMove;
+    }
+
+    public void setIsMaxMove(boolean isMaxMove) {
+        this.isMaxMove = isMaxMove;
+    }
+
+    public void setIsMinMove(boolean isMinMove) {
+        this.isMinMove = isMinMove;
     }
 }

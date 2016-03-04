@@ -5,7 +5,9 @@ package sikang_demo.rotate.main;
  */
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -36,16 +38,15 @@ class TouchView extends ImageView implements ViewTouchActionListener {
     private boolean mEndle;//编辑状态
     private Paint mLinePaint, mButtonPaint, mTextPaint, mSrcPaint;
     private Path mPath;
-    private Point mCancleBtnPoint, mMoveBtnPoint, mRotateBtnPoint, mScaleBtnPoint;//按钮坐标
-    private PointF mCenterPoint;
+    private Point mCancleBtnPoint, mMoveBtnPoint, mRotateBtnPoint, mScaleBtnPoint, mPointInParent;//按钮坐标
+    private PointF mCenterPoint, mParentCenterPoint;
     private float mButtonRadius;//按钮半径
-    private int mButtonCode;
-    private int mTouchSlop;
+    private double nowAngle;
+    private int mButtonCode, mTouchSlop, mLeft, mTop;
     private Bitmap mSrcBm, mCancleBm, mMoveBm, mRotateBm, mScaleBm;
     private Matrix mButtonMatrix, mSrcMatrix;
     private TouchActionController mActionController;
-
-    private int mQuadrant;
+//    private int mQuadrant;
 
     public TouchView(Context context) {
         super(context);
@@ -88,6 +89,9 @@ class TouchView extends ImageView implements ViewTouchActionListener {
         mCenterPoint = new PointF();
         startPoint = new PointF();
         endPoint = new PointF();
+        startRawPoint = new PointF();
+        startForParentPoint = new PointF();
+        endForParentPoint = new PointF();
 
         //init Bitmap
         Resources res = context.getResources();
@@ -144,11 +148,19 @@ class TouchView extends ImageView implements ViewTouchActionListener {
         mCenterPoint.set(mWidth / 2, mHeight / 2);
     }
 
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        mLeft = getLeft();
+        mTop = getTop();
+
+        Log.d(TAG, mLeft + "  " + mTop);
+    }
+
     private void initMatrix() {
         float scale = mWidth < mHeight ? (float) mWidth / (float) mSrcWidth : (float) mHeight / (float) mSrcHeight;
         mSrcMatrix.postScale(scale, scale);
         mSrcMatrix.postRotate(srcAngle, mCenterPoint.x, mCenterPoint.y);
-//        mSrcMatrix.setTranslate(-(mSrcWidth - mWidth) / 2, -(mSrcHeight - mHeight) / 2);
 
 
     }
@@ -188,9 +200,8 @@ class TouchView extends ImageView implements ViewTouchActionListener {
 
     }
 
-    private PointF startPoint;
-    private PointF endPoint;
-    private float startRawX, startRawY, nowTranX, nowTranY;
+    private PointF startPoint, startRawPoint, endPoint, startForParentPoint, endForParentPoint;
+    private float nowTranX, nowTranY;
     private boolean isClick;
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
@@ -207,8 +218,8 @@ class TouchView extends ImageView implements ViewTouchActionListener {
                 startPoint.x = event.getX();
                 startPoint.y = event.getY();
                 //记录绝对坐标
-                startRawX = event.getRawX();
-                startRawY = event.getRawY();
+                startRawPoint.x = event.getRawX();
+                startRawPoint.y = event.getRawY();
                 //记录初始偏移值
                 nowTranX = getTranslationX();
                 nowTranY = getTranslationY();
@@ -218,8 +229,8 @@ class TouchView extends ImageView implements ViewTouchActionListener {
             case MotionEvent.ACTION_MOVE:
                 endPoint.x = event.getX();
                 endPoint.y = event.getY();
-                moveX = event.getRawX() - startRawX;
-                moveY = event.getRawY() - startRawY;
+                moveX = event.getRawX() - startRawPoint.x;
+                moveY = event.getRawY() - startRawPoint.y;
                 if (Math.abs(moveX) > mTouchSlop || Math.abs(moveY) > mTouchSlop) {
                     isClick = false;
                 }
@@ -227,7 +238,7 @@ class TouchView extends ImageView implements ViewTouchActionListener {
                     //操作旋转按钮时，旋转
                     case Constants.ACTION_ROTATE:
                         //得到目标角度
-                        float angle = (this.getRotation() + getAngle(startPoint, endPoint)) % 360;
+                        float angle = (this.getRotation() + getAngle(mCenterPoint, startPoint, endPoint)) % 360;
                         this.setRotation(angle);
                         mActionController.notifyListener(this, Constants.ACTION_ROTATE, angle);
                         break;
@@ -239,120 +250,142 @@ class TouchView extends ImageView implements ViewTouchActionListener {
                         invalidate();
                         break;
                     case Constants.ACTION_MOVE:
-                        getTargetTranslation(moveX, moveY);
+                        float targetX = nowTranX + moveX;
+                        float targetY = nowTranY + moveY;
+                        startForParentPoint.x = startPoint.x + targetX + mLeft;
+                        startForParentPoint.y = startPoint.y + targetY + mTop;
+                        endForParentPoint.x = endPoint.x + targetX + mLeft;
+                        endForParentPoint.y = endPoint.y + targetY + mTop;
+                        double moveAngle = getAngle(mParentCenterPoint, startForParentPoint, endForParentPoint);
+                        double radius = pointDistance(mParentCenterPoint, endForParentPoint);
+                        setTranslationX(targetX);
+                        setTranslationY(targetY);
+
+                        nowAngle = (nowAngle + moveAngle) % 360;
+                        mActionController.notifyListener(this, Constants.ACTION_MOVE, moveAngle, radius);
+                        Log.d(TAG, "半径： " + radius);
+//                        getTargetTranslation(moveX, moveY);
                         break;
                 }
                 break;
             //抬起手指
             case MotionEvent.ACTION_UP:
-                Log.d(TAG, "111111111111111111");
-                moveX = event.getRawX() - startRawX;
-                moveY = event.getRawY() - startRawY;
-
-                switch (mButtonCode) {
-                    case Constants.ACTION_CANCLE:
-                        if (Math.abs(moveX) < mTouchSlop || Math.abs(moveY) < mTouchSlop)
+                moveX = event.getRawX() - startRawPoint.x;
+                moveY = event.getRawY() - startRawPoint.y;
+                if (Math.abs(moveX) < mTouchSlop || Math.abs(moveY) < mTouchSlop) {
+                    switch (mButtonCode) {
+                        case Constants.ACTION_CANCLE:
                             ((ViewGroup) getParent()).removeView(this);
-                        break;
-                    case Constants.ACTION_MOVE:
-                        Log.d(TAG, "555555555555555555");
-                        if (isClick) {
-                            Log.d(TAG, "333333333333333333");
-                            mEndle = !mEndle;
-                            if (mEndle)
-                                mActionController.notifyListener(this, Constants.ACTION_UNEDIT);
+                            break;
+                        case Constants.ACTION_MOVE:
+                            if (isClick) {
+                                mEndle = !mEndle;
+                                if (mEndle)
+                                    mActionController.notifyListener(this, Constants.ACTION_UNEDIT);
+                                invalidate();
+                            }
+//                        else {
+//                            mActionController.notifyListener(null, Constants.MOVE_FINISH);
+//                        }
+                            break;
+                        case Constants.ACTION_FLIP:
+                            Log.d(TAG, "sssssssssssssssssssss");
+                            mSrcMatrix.postScale(-1, 1);
+                            mSrcMatrix.postTranslate(mWidth, 0);
                             invalidate();
-                        } else {
-                            Log.d(TAG, nowTranX + "-/////////////-" + nowTranX);
-                            mActionController.notifyListener(null, Constants.MOVE_FINISH);
-                        }
-                        break;
+                            break;
+                    }
+                    break;
                 }
-                break;
         }
         return true;
     }
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    private void getTargetTranslation(float tranX, float tranY) {
-        float targetTran = 0;
-        boolean xBigger = Math.abs(tranX) >= Math.abs(tranY);
-        //目标偏移值
-        switch (mQuadrant) {
-            case Constants.QUADRANT_ONE:
-                targetTran = xBigger ? tranX : tranY;
-                break;
-            case Constants.QUADRANT_TWO:
-                targetTran = xBigger ? -tranX : tranY;
-                break;
-            case Constants.QUADRANT_THREE:
-                targetTran = xBigger ? -tranX : -tranY;
-                break;
-            case Constants.QUADRANT_FOUR:
-                targetTran = xBigger ? tranX : -tranY;
-                break;
-            case Constants.X_LEFT:
-                targetTran = -tranX;
-                break;
-            case Constants.X_RIGHT:
-                targetTran = tranX;
-                break;
-            case Constants.Y_TOP:
-                targetTran = -tranY;
-                break;
-            case Constants.Y_BOTTOM:
-                targetTran = tranY;
-                break;
-        }
-        mActionController.notifyListener(this, Constants.ACTION_MOVE, targetTran);
-        moveView(targetTran);
+//
+//    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+//    private void getTargetTranslation(float tranX, float tranY) {
+//        //目标偏移值
+//        switch (mQuadrant) {
+//            case Constants.QUADRANT_TWO:
+//                tranX = -tranX;
+//                break;
+//            case Constants.QUADRANT_THREE:
+//                tranX = -tranX;
+//                tranY = -tranY;
+//                break;
+//            case Constants.QUADRANT_FOUR:
+//                tranY = -tranY;
+//                break;
+//            case Constants.X_LEFT:
+//                targetTran = -tranX;
+//                break;
+//            case Constants.X_RIGHT:
+//                targetTran = tranX;
+//                break;
+//            case Constants.Y_TOP:
+//                targetTran = -tranY;
+//                break;
+//            case Constants.Y_BOTTOM:
+//                targetTran = tranY;
+//                break;
+//        }
+//        mActionController.notifyListener(this, Constants.ACTION_MOVE, tranX, tranY);
+//        moveView(tranX, tranY);
+//
+//    }
 
-    }
+//    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+//    private void moveView(float tranX, float tranY) {
+//        if(mActionController.isMaxMove()&& translation>0)
+//            return;
+//        else if(mActionController.isMinMove() &&translation<0)
+//            return;
+    //目标偏移值
+//        float newTranX = nowTranX;
+//        float newTranY = nowTranY;
+//        switch (mQuadrant) {
+//            case Constants.QUADRANT_ONE:
+//                newTranX += tranX;
+//                newTranY += tranY;
+//                break;
+//            case Constants.QUADRANT_TWO:
+//                newTranX -= tranX;
+//                newTranY += tranY;
+//                break;
+//            case Constants.QUADRANT_THREE:
+//                newTranX -= tranX;
+//                newTranY -= tranY;
+//                break;
+//            case Constants.QUADRANT_FOUR:
+//                newTranX += tranX;
+//                newTranY -= tranY;
+//                break;
+//            case Constants.X_LEFT:
+//                newTranX -= tranX;
+//                break;
+//            case Constants.X_RIGHT:
+//                newTranX += translation;
+//                break;
+//            case Constants.Y_TOP:
+//                newTranY -= translation;
+//                break;
+//            case Constants.Y_BOTTOM:
+//                newTranY += translation;
+//                break;
+//
+//        }
+    //确保不会移出屏幕
+//        if (newTranX + getLeft() > 0 && newTranX + getLeft() < getDimension(R.dimen.x320) - mWidth && newTranY + getTop() > 0 && newTranY + getTop() < getDimension(R.dimen.y480) - mHeight) {
+//        setTranslationX(newTranX);
+//        setTranslationY(newTranY);
+//            mActionController.setIsMaxMove(false);
+//            Log.d(TAG,mQuadrant+ "   no");
+//        }else{
+//            Log.d(TAG,mQuadrant+"   yes");
+//            mActionController.setIsMaxMove(true);
+//        }
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    private boolean moveView(float translation) {
-        //目标偏移值
-        float newTranX = nowTranX;
-        float newTranY = nowTranY;
-        switch (mQuadrant) {
-            case Constants.QUADRANT_ONE:
-                newTranX += translation;
-                newTranY += translation;
-                break;
-            case Constants.QUADRANT_TWO:
-                newTranX -= translation;
-                newTranY += translation;
-                break;
-            case Constants.QUADRANT_THREE:
-                newTranX -= translation;
-                newTranY -= translation;
-                break;
-            case Constants.QUADRANT_FOUR:
-                newTranX += translation;
-                newTranY -= translation;
-                break;
-            case Constants.X_LEFT:
-                newTranX -= translation;
-                break;
-            case Constants.X_RIGHT:
-                newTranX += translation;
-                break;
-            case Constants.Y_TOP:
-                newTranY -= translation;
-                break;
-            case Constants.Y_BOTTOM:
-                newTranY += translation;
-                break;
-
-        }
-        //确保不会移出屏幕
-        if (newTranX + getLeft() > 0 && newTranX + getLeft() < getDimension(R.dimen.x320) - mWidth && newTranY + getTop() > 0 && newTranY + getTop() < getDimension(R.dimen.y480) - mHeight) {
-            setTranslationX(newTranX);
-            setTranslationY(newTranY);
-            return true;
-        }
-        return false;
-    }
+//    }
 
     private float srcAngle;
 
@@ -375,7 +408,7 @@ class TouchView extends ImageView implements ViewTouchActionListener {
             if (y < mButtonRadius * 2) {
                 buttonCode = Constants.ACTION_CANCLE;
             } else if (y > mHeight - (mButtonRadius * 2)) {
-                buttonCode = -1;
+                buttonCode = Constants.ACTION_FLIP;
             }
         } else if (x > mWidth - (mButtonRadius * 2)) {
             if (y < mButtonRadius * 2) {
@@ -408,15 +441,27 @@ class TouchView extends ImageView implements ViewTouchActionListener {
         mSrcHeight = mSrcBm.getHeight();
     }
 
+    /**
+     * 根据圆心和角度计算下一个view的位置
+     *
+     * @param center :circleLayout center point
+     * @param angle  :child angle
+     * @param radius :radius length
+     */
+    private void setNewPoint(PointF center, double angle, double radius) {
+        double angleHude = angle * Math.PI / 180;
+        mPointInParent.x = (int) (radius * Math.cos(angleHude) + center.x);
+        mPointInParent.y = (int) (radius * Math.sin(angleHude) + center.y);
+    }
 
     /**
      * 得到两点之间的角度
      */
-    public float getAngle(PointF start, PointF end) {
+    public float getAngle(PointF centerPoint, PointF start, PointF end) {
         //根据起始点和结束点以及View中心点求出三角形的三条边长
-        double side1 = pointDistance(mCenterPoint, start);
+        double side1 = pointDistance(centerPoint, start);
         double side2 = pointDistance(start, end);
-        double side3 = pointDistance(mCenterPoint, end);
+        double side3 = pointDistance(centerPoint, end);
 
         //得出弧度
         double cosb = (side1 * side1 + side3 * side3 - side2 * side2) / (2 * side1 * side3);
@@ -428,12 +473,12 @@ class TouchView extends ImageView implements ViewTouchActionListener {
         //弧度换算为角度
         float angle = (float) (radian * 180 / Math.PI);
 
-        //center -> proMove的向量， 我们使用PointF来实现
-        PointF centerToProMove = new PointF((start.x - mCenterPoint.x), (start.y - mCenterPoint.y));
-        //center -> curMove 的向量
-        PointF centerToCurMove = new PointF((end.x - mCenterPoint.x), (end.y - mCenterPoint.y));
+        float beforeX = start.x - centerPoint.x;
+        float beforeY = start.y - centerPoint.y;
+        float afterX = end.x - centerPoint.x;
+        float afterY = end.y - centerPoint.y;
         //向量叉乘结果, 如果结果为负数， 表示为逆时针， 结果为正数表示顺时针
-        float result = centerToProMove.x * centerToCurMove.y - centerToProMove.y * centerToCurMove.x;
+        float result = beforeX * afterY - beforeY * afterX;
 
         if (result < 0) {
             angle = -angle;
@@ -450,7 +495,13 @@ class TouchView extends ImageView implements ViewTouchActionListener {
                 this.setRotation((float) args[0]);
                 break;
             case Constants.ACTION_MOVE:
-                moveView((float) args[0]);
+                //更新坐标
+                nowAngle = (nowAngle + (double) args[0]) % 360;
+                setNewPoint(mParentCenterPoint, nowAngle, (double) args[1]);
+                nowTranX = mPointInParent.x - mLeft - mWidth / 2;
+                nowTranY = mPointInParent.y - mTop - mHeight / 2;
+                setTranslationX(nowTranX);
+                setTranslationY(nowTranY);
                 break;
             case Constants.ACTION_UNEDIT:
                 if (mEndle) {
@@ -458,15 +509,27 @@ class TouchView extends ImageView implements ViewTouchActionListener {
                     invalidate();
                 }
                 break;
-            case Constants.MOVE_FINISH:
-                nowTranX = getTranslationX();
-                nowTranY = getTranslationY();
-                Log.d(TAG, nowTranX + "-------" + nowTranX);
-                break;
+//            case Constants.MOVE_FINISH:
+//                nowTranX = getTranslationX();
+//                nowTranY = getTranslationY();
+//                Log.d(TAG,mQuadrant+":   "+ nowTranX + "-------" + nowTranX);
+//                break;
         }
     }
 
-    public void setQuadrant(int quadrant) {
-        this.mQuadrant = quadrant;
+    public void setmParentCenterPoint(PointF mParentCenterPoint) {
+        this.mParentCenterPoint = mParentCenterPoint;
     }
+
+    public void setmPointInParent(Point mPointInParent) {
+        this.mPointInParent = mPointInParent;
+    }
+
+    public void setNowAngle(double nowAngle) {
+        this.nowAngle = nowAngle;
+    }
+
+//    public void setQuadrant(int quadrant) {
+//        this.mQuadrant = quadrant;
+//    }
 }

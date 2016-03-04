@@ -3,6 +3,7 @@ package sikang_demo.rotate.main;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -21,7 +22,7 @@ public class CircleLayout extends ViewGroup {
     private int mWidth;
     private int mHeight;
     private double mLayoutRadius;
-    private Point mCenterPoint;
+    private PointF mCenterPoint;
 
     public CircleLayout(Context context) {
         super(context);
@@ -34,7 +35,7 @@ public class CircleLayout extends ViewGroup {
     }
 
     private void init() {
-        mCenterPoint = new Point();
+        mCenterPoint = new PointF();
     }
 
     @Override
@@ -82,10 +83,12 @@ public class CircleLayout extends ViewGroup {
             //计算元素的坐标
             Point viewPoint = getPoint(mCenterPoint, layoutAngle, radius);
             //计算所在象限
-            childView.setQuadrant(getQuadrant(viewPoint));
-            Log.d(TAG, "x:" + viewPoint.x + "  y:" + viewPoint.y + "   width:" + childHalfWidth + "    height:" + childHalfHeight);
+//            childView.setQuadrant(getQuadrant(viewPoint));
+            childView.setmParentCenterPoint(mCenterPoint);
+            childView.setmPointInParent(viewPoint);
+            childView.setNowAngle(layoutAngle);
             //设置子View的位置
-            childView.layout(viewPoint.x - childHalfWidth, viewPoint.y - childHalfHeight, viewPoint.x + childHalfWidth, viewPoint.y + childHalfHeight);
+            childView.layout(viewPoint.x - childHalfWidth, viewPoint.y - childHalfHeight, viewPoint.x + childHalfWidth,viewPoint.y + childHalfHeight);
             layoutAngle = (layoutAngle + childAngle) % 360;//更新角度
             rotateAngle = (rotateAngle + childAngle) % 360;
         }
@@ -98,11 +101,11 @@ public class CircleLayout extends ViewGroup {
      * @param angle  :child angle
      * @param radius :radius length
      */
-    private Point getPoint(Point center, double angle, double radius) {
+    private Point getPoint(PointF center, double angle, double radius) {
         Point point = new Point();
         double angleHude = angle * Math.PI / 180;
-        point.x = (int) (radius * Math.cos(angleHude)) + center.x;
-        point.y = (int) (radius * Math.sin(angleHude)) + center.y;
+        point.x = (int) (radius * Math.cos(angleHude) + center.x);
+        point.y = (int) (radius * Math.sin(angleHude) + center.y);
         return point;
     }
 
@@ -127,33 +130,35 @@ public class CircleLayout extends ViewGroup {
 
     }
 
-    //获取所在象限
-    private int getQuadrant(Point point) {
-        int quadrant = -1;
-        if (point.x > mCenterPoint.x) {
-            if (point.y > mCenterPoint.y) {
-                quadrant = Constants.QUADRANT_ONE;
-            } else if (point.y < mCenterPoint.y) {
-                quadrant = Constants.QUADRANT_FOUR;
-            } else if (point.y == mCenterPoint.y) {
-                quadrant = Constants.X_RIGHT;
-            }
-        } else if (point.x < mCenterPoint.x) {
-            if (point.y > mCenterPoint.y) {
-                quadrant = Constants.QUADRANT_TWO;
-            } else if (point.y < mCenterPoint.y) {
-                quadrant = Constants.QUADRANT_THREE;
-            } else if (point.y == mCenterPoint.y) {
-                quadrant = Constants.X_LEFT;
-            }
-        } else if (point.x == mCenterPoint.x) {
-            if (point.y > mCenterPoint.y) {
-                quadrant = Constants.Y_BOTTOM;
-            } else if (point.y < mCenterPoint.y) {
-                quadrant = Constants.Y_TOP;
-            }
-        }
-        return quadrant;
-    }
+//    //获取所在象限
+//    private int getQuadrant(Point point) {
+//        int quadrant = -1;
+//        if (point.x > mCenterPoint.x) {
+//            if (point.y >= mCenterPoint.y) {
+//                quadrant = Constants.QUADRANT_ONE;
+//            } else if (point.y < mCenterPoint.y) {
+//                quadrant = Constants.QUADRANT_FOUR;
+//            } //
+//            else if (point.y == mCenterPoint.y) {//
+//                quadrant = Constants.X_RIGHT;//
+//            }//
+//        } else if (point.x < mCenterPoint.x) {//
+//            if (point.y > mCenterPoint.y) {//
+//                quadrant = Constants.QUADRANT_TWO;//
+//            } else if (point.y <= mCenterPoint.y) {//
+//                quadrant = Constants.QUADRANT_THREE;//
+//            }//
+////            else if (point.y == mCenterPoint.y) //{
+////                quadrant = Constants.X_LEFT//;
+////            //}
+//        } else if (point.x == mCenterPoint.x) //{
+//            if (point.y > mCenterPoint.y) //{
+//                quadrant = Constants.QUADRANT_TWO//;
+//            } else if (point.y < mCenterPoint.y) //{
+//                quadrant = Constants.QUADRANT_FOUR//;
+//            //}
+//        //}
+//        return quadrant//;
+//    }
 
 }

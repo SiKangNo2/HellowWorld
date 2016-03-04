@@ -59,26 +59,5 @@
             android:layout_width="300px"
             android:layout_height="300px"
             />
-        <sikang_demo.rotate.main.TouchView
-            android:layout_width="300px"
-            android:layout_height="300px"
-            />
-        <sikang_demo.rotate.main.TouchView
-            android:layout_width="300px"
-            android:layout_height="300px"
-            />
-        <sikang_demo.rotate.main.TouchView
-            android:layout_width="300px"
-            android:layout_height="300px"
-            />
-        <sikang_demo.rotate.main.TouchView
-            android:layout_width="300px"
-            android:layout_height="300px"
-            />
-        <sikang_demo.rotate.main.TouchView
-            android:layout_width="300px"
-            android:layout_height="300px"
-            />
-
     </sikang_demo.rotate.main.CircleLayout>
 </RelativeLayout>
