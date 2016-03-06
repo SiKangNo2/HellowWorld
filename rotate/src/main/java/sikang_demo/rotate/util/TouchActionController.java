@@ -7,41 +7,42 @@ import java.util.List;
  * Created by SiKang on 2016/3/3.
  */
 public class TouchActionController {
-    private List<ViewTouchActionListener> mActionListener=new ArrayList<ViewTouchActionListener>(12);
-    public static TouchActionController mTouchActionController=null;
-    private boolean isMaxMove,isMinMove;
-    private TouchActionController(){
-        isMaxMove=false;
-        isMinMove=false;
+    private List<ViewTouchActionListener> mActionListener = new ArrayList<ViewTouchActionListener>(12);
+    public static TouchActionController mTouchActionController = null;
+    private boolean isMaxMove, isMinMove;
+
+    private TouchActionController() {
+        isMaxMove = false;
+        isMinMove = false;
     }
 
-    public static TouchActionController getInstance(){
-        if(mTouchActionController==null) {
+    public static TouchActionController getInstance() {
+        if (mTouchActionController == null) {
             synchronized (TouchActionController.class) {
                 if (mTouchActionController == null) {
-                    mTouchActionController=new TouchActionController();
+                    mTouchActionController = new TouchActionController();
                 }
             }
         }
         return mTouchActionController;
     }
-    public void setActionListener(ViewTouchActionListener listener){
-        if(!mActionListener.contains(listener)){
+
+    public void setActionListener(ViewTouchActionListener listener) {
+        if (!mActionListener.contains(listener)) {
             mActionListener.add(listener);
         }
     }
 
-    public void removeActionListener(ViewTouchActionListener listener){
-        if(mActionListener.contains(listener)){
+    public void removeActionListener(ViewTouchActionListener listener) {
+        if (mActionListener.contains(listener)) {
             mActionListener.remove(listener);
         }
     }
 
-    public void notifyListener(ViewTouchActionListener sender,int ACTION_ID,Object ...args){
-        for (ViewTouchActionListener listener : mActionListener)
-        {
-            if(sender!=listener){
-                listener.onTouchAction(ACTION_ID,args);
+    public void notifyListener(ViewTouchActionListener sender, final int ACTION_ID, final Object... args) {
+        for (final ViewTouchActionListener listener : mActionListener) {
+            if (sender != listener) {
+                listener.onTouchAction(ACTION_ID, args);
             }
         }
     }

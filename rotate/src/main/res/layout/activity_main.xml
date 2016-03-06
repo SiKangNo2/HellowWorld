@@ -4,19 +4,21 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".main.MainActivity">
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/x30">
         <Button
             android:id="@+id/activity_main_save_btn"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="@dimen/x40"
             android:text="保存"/>
+    <SeekBar
+        android:id="@+id/activity_main_seekbar"
+        android:layout_width="match_parent"
+        android:layout_alignParentBottom="true"
+        android:layout_height="@dimen/x30"/>
 
-    </LinearLayout>
     <sikang_demo.rotate.main.CircleLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:id="@+id/activity_main_circleLayout"
         >
 
         <sikang_demo.rotate.main.TouchView

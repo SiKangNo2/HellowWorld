@@ -5,24 +5,25 @@ import android.content.Context;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.os.Build;
+import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
+
 import sikang_demo.rotate.R;
-import sikang_demo.rotate.util.Constants;
 
 /**
  * Created by SiKang on 2016/3/2.
  */
 public class CircleLayout extends ViewGroup {
     private final String TAG = "CircleLayoutDebug";
-    private float childAngle;
     private int mWidth;
     private int mHeight;
     private double mLayoutRadius;
     private PointF mCenterPoint;
+    private Handler mHanlder;
 
     public CircleLayout(Context context) {
         super(context);
@@ -59,47 +60,66 @@ public class CircleLayout extends ViewGroup {
         Log.d(TAG, "onMeasure()");
     }
 
-    //设置子View的位置
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         if (!changed)
             return;
+        setChildLayout();
+    }
+
+    //设置所有子View位置
+    private void setChildLayout() {
         int childCount = getChildCount();
         double childAngle = 360 / childCount;
         double layoutAngle = 270;
         double rotateAngle = 0;
+        Log.d(TAG, "onLayout()  " + childAngle);
         for (int i = 0; i < childCount; i++) {
             //得到子View
             TouchView childView = (TouchView) getChildAt(i);
-            childView.setSrcAngle((float) rotateAngle);
             //为子View设置宽高
-            int widthSPec = MeasureSpec.makeMeasureSpec((int) getDimension(R.dimen.x200), MeasureSpec.UNSPECIFIED);
-            childView.measure(widthSPec, widthSPec);
-            int childHalfWidth = childView.getMeasuredWidth() / 2;
-            int childHalfHeight = childView.getMeasuredHeight() / 2;
+            int childHalfWidth = (int) (getDimension(R.dimen.x100) / 2);
+            int childHalfHeight = (int) (getDimension(R.dimen.x100) / 2);
+            Log.d("RotateViewDebug", "fathre onLayout" + childHalfWidth);
             //计算半径
             double radius = mLayoutRadius - (childHalfWidth < childHalfHeight ? childHalfWidth : childHalfHeight);
             //计算元素的坐标
             Point viewPoint = getPoint(mCenterPoint, layoutAngle, radius);
-            //计算所在象限
-//            childView.setQuadrant(getQuadrant(viewPoint));
+            //初始化必要参数
             childView.setmParentCenterPoint(mCenterPoint);
             childView.setmPointInParent(viewPoint);
             childView.setNowAngle(layoutAngle);
+            childView.initMatrix((float) rotateAngle, childHalfWidth * 2, childHalfHeight * 2);
             //设置子View的位置
-            childView.layout(viewPoint.x - childHalfWidth, viewPoint.y - childHalfHeight, viewPoint.x + childHalfWidth,viewPoint.y + childHalfHeight);
-            layoutAngle = (layoutAngle + childAngle) % 360;//更新角度
+            childView.layout(viewPoint.x - childHalfWidth, viewPoint.y - childHalfHeight, viewPoint.x + childHalfWidth, viewPoint.y + childHalfHeight);
+            //更新角度
+            layoutAngle = (layoutAngle + childAngle) % 360;
             rotateAngle = (rotateAngle + childAngle) % 360;
         }
     }
 
+    @Override
+    public void onViewRemoved(View child) {
+        TouchView view = (TouchView) child;
+        view.destory();
+        if (view.isNormalDestory()) {
+            setChildCount(getChildCount());
+            mHanlder.sendEmptyMessage(1);
+        }
+        super.onViewRemoved(child);
+    }
+
+    public void setChildCount(int count) {
+        removeAllViews();
+        for (int i = 0; i < count; i++) {
+            addView(new TouchView(getContext()));
+        }
+        setChildLayout();
+    }
+
     /**
      * 根据圆心和角度计算下一个view的位置
-     *
-     * @param center :circleLayout center point
-     * @param angle  :child angle
-     * @param radius :radius length
      */
     private Point getPoint(PointF center, double angle, double radius) {
         Point point = new Point();
@@ -130,35 +150,9 @@ public class CircleLayout extends ViewGroup {
 
     }
 
-//    //获取所在象限
-//    private int getQuadrant(Point point) {
-//        int quadrant = -1;
-//        if (point.x > mCenterPoint.x) {
-//            if (point.y >= mCenterPoint.y) {
-//                quadrant = Constants.QUADRANT_ONE;
-//            } else if (point.y < mCenterPoint.y) {
-//                quadrant = Constants.QUADRANT_FOUR;
-//            } //
-//            else if (point.y == mCenterPoint.y) {//
-//                quadrant = Constants.X_RIGHT;//
-//            }//
-//        } else if (point.x < mCenterPoint.x) {//
-//            if (point.y > mCenterPoint.y) {//
-//                quadrant = Constants.QUADRANT_TWO;//
-//            } else if (point.y <= mCenterPoint.y) {//
-//                quadrant = Constants.QUADRANT_THREE;//
-//            }//
-////            else if (point.y == mCenterPoint.y) //{
-////                quadrant = Constants.X_LEFT//;
-////            //}
-//        } else if (point.x == mCenterPoint.x) //{
-//            if (point.y > mCenterPoint.y) //{
-//                quadrant = Constants.QUADRANT_TWO//;
-//            } else if (point.y < mCenterPoint.y) //{
-//                quadrant = Constants.QUADRANT_FOUR//;
-//            //}
-//        //}
-//        return quadrant//;
-//    }
+    public void setmHandler(Handler handler) {
+        this.mHanlder = handler;
+    }
+
 
 }

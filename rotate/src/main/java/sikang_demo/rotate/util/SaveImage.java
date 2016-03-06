@@ -2,11 +2,19 @@ package sikang_demo.rotate.util;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
+
+import sikang_demo.rotate.R;
+
 /**
  * Created by SiKang on 2016/3/3.
  */
@@ -29,8 +37,9 @@ public class SaveImage {
                 .getHeight();
         // 去掉标题栏
         // Bitmap b = Bitmap.createBitmap(b1, 0, 25, 320, 455);
-        Bitmap b = Bitmap.createBitmap(b1, 0, statusBarHeight, width, height
-                - statusBarHeight);
+        int top= (int) (statusBarHeight+activity.getResources().getDimension(R.dimen.x40));
+        Bitmap b = Bitmap.createBitmap(b1, 0, top, width, (int) (height
+                        - top-activity.getResources().getDimension(R.dimen.x30)));
         view.destroyDrawingCache();
         return b;
     }
@@ -51,7 +60,11 @@ public class SaveImage {
         }
     }
     // 程序入口
-    public static void shoot(Activity a) {
-        SaveImage.savePic(SaveImage.takeScreenShot(a), "sdcard/xx.png");
+    public static void shoot(Activity context) {
+        DateFormat format=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String date=format.format(new Date());
+        SaveImage.savePic(SaveImage.takeScreenShot(context), "sdcard/"+date+".png");
+        Toast.makeText(context,"图片已保存到sdcard/"+date+".png",Toast.LENGTH_SHORT).show();
     }
+
 }
